@@ -8,7 +8,7 @@ import torch
 import time
 from torchprofile import profile_macs
 # from thop import profile
-from model import load_pretrained_transformer,return_all_model_paths
+from vit import load_pretrained_transformer,return_all_model_paths
 from dataset import load_imagenet,load_tiny_imagenet
 
 device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')

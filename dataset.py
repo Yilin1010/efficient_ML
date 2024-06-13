@@ -15,8 +15,8 @@ import numpy as np
 from torchvision import datasets, transforms
 from datasets import load_dataset
 from transformers import ViTImageProcessor
-
-
+from PIL import ImageFile, Image
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
 def set_seed(seed_value=42):
@@ -45,7 +45,6 @@ def create_split_samplers(dataset_length=50000,
     print(f"created split samplers, pruning: {len(pruning_indices)} training: {len(training_indices)} val: {len(val_indices)}")
     return pruning_sampler, training_sampler, val_sampler
 
-ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class ImageNetSubset(torch.utils.data.Dataset):
     def __init__(self, root, transform=None):
@@ -98,107 +97,6 @@ class ImageNetSubset(torch.utils.data.Dataset):
             image = self.transform(image,return_tensors='pt')
 
         return image['pixel_values'][0], label
-
-def load_imagenet(classset_dir ='data/classset_val',
-                    model_name='google/vit-base-patch16-224',
-                    num_workers=2, train=False,val=False,prune=False):
-    
-    assert train or val or prune,"please set train, val or pruning to true"
-    # Define your transformations if needed
-    transform  = ViTImageProcessor.from_pretrained(model_name)
-
-    # Create Dataset
-    dataset = ImageNetSubset(root=classset_dir, transform=transform)
-
-    print("start spliting dataset")
-    # Define splits
-    # splits = {'pruning': 5/50, 'training': 5/50, 'val': 5/50} 
-    
-    # debug
-    splits = {'pruning': 10/50, 'training': 10/50, 'val': 10/50}
-
-    # Create Samplers
-    pruning_sampler, training_sampler, val_sampler = create_split_samplers(len(dataset), splits)
-
-    dataloaders = []  
-    if train:
-        training_loader = DataLoader(dataset, batch_size=16, sampler=training_sampler, shuffle=False, num_workers=num_workers)
-        print("return training set")
-        dataloaders.append(training_loader)
-    if val:
-        val_loader = DataLoader(dataset, batch_size=32, sampler=val_sampler, shuffle=False, num_workers=num_workers)
-        print("return val set")
-        dataloaders.append(val_loader)
-    if prune:
-        pruning_loader = DataLoader(dataset, batch_size=16, sampler=pruning_sampler, shuffle=False, num_workers=num_workers)
-        print("return pruning set")
-        dataloaders.append(pruning_loader)
-    
-    if len(dataloaders)==1:return dataloaders[0]
-    else:return tuple(dataloaders)
-
-
-def load_cifar10(batch_size=32):
-    transform = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-    ])
-
-    test_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
-
-    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-
-    train_dataset = datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
-
-    train_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-
-
-    return train_loader, test_loader
-
-
-def load_imagenet_subset(subset_dir='data/subset_val',model_name='google/vit-base-patch16-224'):
-
-    
-    # Set up data transformations
-    # transform = transforms.Compose([
-    #     transforms.Resize((224, 224)),
-    #     transforms.ToTensor(),
-    #     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    # ])
-    image_processor = ViTImageProcessor.from_pretrained(model_name)
-
-    ImageFile.LOAD_TRUNCATED_IMAGES = True
-    # Create a custom dataset for the validation subset
-    
-
-    subset_dataset = ImageNetSubset(root=subset_dir, transform=image_processor)
-    subset_loader = torch.utils.data.DataLoader(subset_dataset, batch_size=32, shuffle=True)
-
-    return subset_loader
-
-
-
-def load_tiny_imagenet(model_name='google/vit-base-patch16-224',data_path = "Maysee/tiny-imagenet", 
-                       data_info = 'data/tiny_infos.json',**kwargs):
-    
-    set_seed()
-
-    train_batch_size = kwargs.get('train_batch',32)
-
-    print("loading tiny")
-    tiny_imagenet_train = load_dataset(data_path, split='train')
-    tiny_imagenet_test = load_dataset(data_path, split='valid')
-
-
-    collate_fn = tiny_imagenet_collate_fn(model_name, data_info)
-
-    # Use DataLoader to handle batches and shuffling
-    train_loader = torch.utils.data.DataLoader(tiny_imagenet_train, batch_size=train_batch_size, collate_fn=collate_fn, shuffle=True)
-    test_loader = torch.utils.data.DataLoader(tiny_imagenet_test, batch_size=32, collate_fn=collate_fn, shuffle=True)
-
-    return train_loader, test_loader
-
 
 
 def tiny_imagenet_collate_fn(model_name='google/vit-base-patch16-224',
@@ -395,5 +293,106 @@ def create_clsloc_to_clsidx():
     return clsloc_to_clsidx
 
 
+def split_load_imagenet(classset_dir ='data/classset_val',
+                    model_name='google/vit-base-patch16-224',
+                    num_workers=2, train=False, val=False,prune=False):
+    
+    assert train or val or prune,"please set train, val or pruning to true"
+    # Define your transformations if needed
+    image_processor  = ViTImageProcessor.from_pretrained(model_name)
+
+    ImageFile.LOAD_TRUNCATED_IMAGES = True
+
+    # Create Dataset
+    dataset = ImageNetSubset(root=classset_dir, transform=image_processor)
+
+    print("start spliting dataset")
+    # Define splits
+    # splits = {'pruning': 5/50, 'training': 5/50, 'val': 5/50} 
+    
+    # debug
+    splits = {'pruning': 10/50, 'training': 10/50, 'val': 10/50}
+
+    # Create Samplers
+    pruning_sampler, training_sampler, val_sampler = create_split_samplers(len(dataset), splits)
+
+    dataloaders = []  
+    if train:
+        training_loader = DataLoader(dataset, batch_size=16, sampler=training_sampler, shuffle=False, num_workers=num_workers)
+        print("return training set")
+        dataloaders.append(training_loader)
+    if val:
+        val_loader = DataLoader(dataset, batch_size=32, sampler=val_sampler, shuffle=False, num_workers=num_workers)
+        print("return val set")
+        dataloaders.append(val_loader)
+    if prune:
+        pruning_loader = DataLoader(dataset, batch_size=16, sampler=pruning_sampler, shuffle=False, num_workers=num_workers)
+        print("return pruning set")
+        dataloaders.append(pruning_loader)
+    
+    if len(dataloaders)==1:return dataloaders[0]
+    else:return tuple(dataloaders)
+
+
+def load_imagenet_subset(subset_dir='data/subset_val',model_name='google/vit-base-patch16-224'):
+
+    
+    # Set up data transformations
+    # transform = transforms.Compose([
+    #     transforms.Resize((224, 224)),
+    #     transforms.ToTensor(),
+    #     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    # ])
+    image_processor = ViTImageProcessor.from_pretrained(model_name)
+
+    ImageFile.LOAD_TRUNCATED_IMAGES = True
+    # Create a custom dataset for the validation subset
+    
+
+    subset_dataset = ImageNetSubset(root=subset_dir, transform=image_processor)
+    subset_loader = torch.utils.data.DataLoader(subset_dataset, batch_size=32, shuffle=True)
+
+    return subset_loader
+
+
+
+def load_cifar10(batch_size=32):
+    transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    ])
+
+    test_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
+
+    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+
+    train_dataset = datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
+
+    train_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+
+
+    return train_loader, test_loader
+
+
+def load_tiny_imagenet(model_name='google/vit-base-patch16-224',data_path = "Maysee/tiny-imagenet", 
+                       data_info = 'data/tiny_infos.json',**kwargs):
+    
+    set_seed()
+
+    train_batch_size = kwargs.get('train_batch',32)
+
+    print("loading tiny")
+    tiny_imagenet_train = load_dataset(data_path, split='train')
+    tiny_imagenet_test = load_dataset(data_path, split='valid')
+
+
+    collate_fn = tiny_imagenet_collate_fn(model_name, data_info)
+
+    # Use DataLoader to handle batches and shuffling
+    train_loader = torch.utils.data.DataLoader(tiny_imagenet_train, batch_size=train_batch_size, collate_fn=collate_fn, shuffle=True)
+    test_loader = torch.utils.data.DataLoader(tiny_imagenet_test, batch_size=32, collate_fn=collate_fn, shuffle=True)
+
+    return train_loader, test_loader
 
 

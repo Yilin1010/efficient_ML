@@ -8,7 +8,6 @@ import os
 import sys
 import torch
 from dataset import create_imagenet_subset
-from model import load_pretrained_transformer
 from evaluate import get_baseline_evaluation,get_evaluation
 assert torch.cuda.is_available(), \
 "The current runtime does not have CUDA support." \
@@ -22,7 +21,7 @@ def main():
   
   if not os.path.isdir(subset_dir):
       print(f"create {subset_dir}\n")
-      create_imagenet_subset(subset_dir=subset_dir, num_samples_per_class=10)
+      create_imagenet_subset()
 
 
   if sys.argv[2]=="base":

@@ -6,8 +6,9 @@
 [Google Slides](https://docs.google.com/presentation/d/1xbSTNDZkuWOmolpGh7bEgwQFis3ULenvXclJrscKxzE/edit?usp=sharing)
 
 ### Pruning Methods
- ![Alt text](image.png)
- ![Alt text](image.png)
+![Alt text](img/pruning.png)
+![Alt text](img/row_prune.png)
+
 
 ### Retraining Performance and Efficiency 
 ![Alt text](img/training_acc.png)

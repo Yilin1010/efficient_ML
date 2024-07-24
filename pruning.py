@@ -8,7 +8,8 @@
 
 
 import torch
-from vit import load_pretrained_transformer,save_transformer,load_saved_transformer,return_all_model_paths
+from model.vit import load_pretrained_transformer,save_transformer,load_saved_transformer
+from model.utils import return_all_model_paths
 from dataset import load_imagenet,load_tiny_imagenet
 from evaluate import get_evaluation
 import os

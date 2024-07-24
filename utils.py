@@ -7,15 +7,15 @@ import matplotlib
 # matplotlib.use('TkAgg')  # Set the backend to TkAgg for X11
 import matplotlib.pyplot as plt
 import numpy as np
-import os
-import vit 
+from model.utils import return_all_model_paths
+from model import vit 
 
 
 def plot_distribution(model,file_name,named_keyword=['attention','dense','projection'],saveON=False):
   print(f"plot {file_name}")
   params = []
   print(named_keyword)
-  for name, param in  vit named_parameters():
+  for name, param in  model.named_parameters():
     if 'weight' in name:
         if named_keyword is None or any(keyword in name for keyword in named_keyword):
           params.extend(param.data.flatten().tolist())
@@ -62,10 +62,10 @@ def create_figure_with_grids(models, file_name):
     # plt.show()
 
 def plot_figures(model_dir,named_keyword=['attention','dense','projection'],saveON=True):
-  model_paths =  vit return_all_model_paths(model_dir)
+  model_paths = return_all_model_paths(model_dir)
 
   for model_path in model_paths:
-    loaded_model =  vit load_saved_transformer(model_path)
+    loaded_model =  vit.load_saved_transformer(model_path)
     file_name = model_path.replace("/","-").replace(".pth","")
     plot_distribution(loaded_model,file_name,named_keyword,saveON)
     

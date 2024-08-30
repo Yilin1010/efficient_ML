@@ -101,3 +101,4 @@ evaluate Vision Transformers (ViTs), including FLOPs, MACs, model size, memory u
      model_size_mb = model_size / 1e6  # Convert to megabytes
      ```
 
+
